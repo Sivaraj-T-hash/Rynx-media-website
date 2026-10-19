@@ -38,7 +38,7 @@ export const portfolioService = {
   ): Promise<DbPortfolioProject> {
     if (!project.title?.trim()) throw new Error('Project title is required.');
     if (!project.slug?.trim()) throw new Error('Project slug is required.');
-    if (!project.thumbnail_url?.trim()) throw new Error('Thumbnail image URL is required.');
+    if (!project.thumbnail_url?.trim()) throw new Error('Project video / thumbnail is required.');
 
     const { data, error } = await supabase
       .from('portfolio_projects')
@@ -50,6 +50,8 @@ export const portfolioService = {
         thumbnail_url: project.thumbnail_url.trim(),
         preview_video_url: project.preview_video_url?.trim() || null,
         full_video_url: project.full_video_url?.trim() || null,
+        video_storage_path: project.video_storage_path || null,
+        thumbnail_storage_path: project.thumbnail_storage_path || null,
         aspect_ratio: project.aspect_ratio || '16:9',
         duration: project.duration?.trim() || '00:30',
         client_industry: project.client_industry?.trim() || null,
@@ -95,7 +97,31 @@ export const portfolioService = {
   },
 
   async deleteProject(id: string): Promise<void> {
+    // 1. Fetch paths for cleanup
+    const { data: project } = await supabase
+      .from('portfolio_projects')
+      .select('video_storage_path, thumbnail_storage_path')
+      .eq('id', id)
+      .maybeSingle();
+
+    // 2. Delete database record
     const { error } = await supabase.from('portfolio_projects').delete().eq('id', id);
     if (error) throw error;
+
+    // 3. Clean up storage files asynchronously
+    if (project?.video_storage_path) {
+      try {
+        await supabase.storage.from('portfolio-media').remove([project.video_storage_path]);
+      } catch (err) {
+        console.warn('Video storage delete warning:', err);
+      }
+    }
+    if (project?.thumbnail_storage_path) {
+      try {
+        await supabase.storage.from('portfolio-media').remove([project.thumbnail_storage_path]);
+      } catch (err) {
+        console.warn('Thumbnail storage delete warning:', err);
+      }
+    }
   },
 };

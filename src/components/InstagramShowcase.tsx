@@ -1,41 +1,410 @@
-import React from 'react';
-import { ArrowUpRight, Play } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  ArrowUpRight,
+  Sparkles,
+} from 'lucide-react';
 import { InstagramIcon } from './SocialIcons';
 import { CONTACT_CONFIG } from '../config/contactConfig';
 
-export const InstagramShowcase: React.FC = () => {
-  // Selected Instagram visual highlights (configurable sample reels)
-  const instagramReels = [
-    {
-      id: 'ig-1',
-      title: 'Cinematic Hyperlapse Sequence',
-      aspect: '9:16',
-      thumbnail: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=600&auto=format&fit=crop',
-      views: 'Selected Cut',
-    },
-    {
-      id: 'ig-2',
-      title: 'Sound Design Breakdown',
-      aspect: '9:16',
-      thumbnail: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?q=80&w=600&auto=format&fit=crop',
-      views: 'BTS Edit',
-    },
-    {
-      id: 'ig-3',
-      title: 'LOG to Rec.709 Color Grade',
-      aspect: '9:16',
-      thumbnail: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=600&auto=format&fit=crop',
-      views: 'Color Pass',
-    },
-    {
-      id: 'ig-4',
-      title: 'Speed Ramp & Whip-Pan Hooks',
-      aspect: '9:16',
-      thumbnail: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=600&auto=format&fit=crop',
-      views: 'Retention Edit',
-    },
-  ];
+interface ReelItem {
+  id: string;
+  title: string;
+  videoSrc: string;
+  tag: string;
+}
 
+const UPLOADED_REELS: ReelItem[] = [
+  {
+    id: 'reel-1',
+    title: 'Cinematic Visual Sequence',
+    videoSrc: '/videos/689ea04f5f41f8772af9bec15ebec5c7_0_32266666.mp4',
+    tag: 'Master Cut',
+  },
+  {
+    id: 'reel-2',
+    title: 'Dynamic Rhythm & Sound Design',
+    videoSrc: '/videos/a06aa9fa3eba766aa7ce9e554061c3a1_0_35100000.mp4',
+    tag: 'Pacing & Transition',
+  },
+  {
+    id: 'reel-3',
+    title: 'Commercial Post-Production Grade',
+    videoSrc: '/videos/lv_0_20260806183404.mp4',
+    tag: 'Final Grade',
+  },
+];
+
+interface ReelCardProps {
+  reel: ReelItem;
+}
+
+const ReelCard: React.FC<ReelCardProps> = ({ reel }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [currentTimeStr, setCurrentTimeStr] = useState('0:00');
+  const [durationStr, setDurationStr] = useState('0:00');
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Auto-play when card enters viewport
+  useEffect(() => {
+    const el = containerRef.current;
+    const video = videoRef.current;
+    if (!el || !video) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            video.play().catch(() => {});
+            setIsPlaying(true);
+          } else {
+            video.pause();
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const togglePlay = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      video.pause();
+      setIsPlaying(false);
+    } else {
+      video.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const cur = video.currentTime;
+    const dur = video.duration || 1;
+    setProgress((cur / dur) * 100);
+
+    const curM = Math.floor(cur / 60);
+    const curS = Math.floor(cur % 60);
+    setCurrentTimeStr(`${curM}:${curS < 10 ? '0' : ''}${curS}`);
+
+    if (video.duration) {
+      const durM = Math.floor(dur / 60);
+      const durS = Math.floor(dur % 60);
+      setDurationStr(`${durM}:${durS < 10 ? '0' : ''}${durS}`);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+
+    const newPct = parseFloat(e.target.value);
+    video.currentTime = (newPct / 100) * video.duration;
+    setProgress(newPct);
+  };
+
+  const handleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.requestFullscreen) {
+      video.requestFullscreen();
+    }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="card-glass"
+      style={{
+        borderRadius: '1.25rem',
+        overflow: 'hidden',
+        position: 'relative',
+        aspectRatio: '9/16',
+        backgroundColor: '#0a0a12',
+        border: '1px solid rgba(212, 175, 55, 0.2)',
+        boxShadow: isHovered
+          ? '0 15px 35px rgba(212, 175, 55, 0.15)'
+          : '0 10px 25px rgba(0, 0, 0, 0.6)',
+        transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => togglePlay()}
+    >
+      {/* Autoplay HTML5 Video */}
+      <video
+        ref={videoRef}
+        src={reel.videoSrc}
+        autoPlay
+        loop
+        muted={isMuted}
+        playsInline
+        preload="metadata"
+        onTimeUpdate={handleTimeUpdate}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        }}
+      />
+
+      {/* Dark Vignette Gradients */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.92) 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Top Bar: Tag & Audio / Instagram Buttons */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '0.85rem',
+          left: '0.85rem',
+          right: '0.85rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          zIndex: 5,
+        }}
+      >
+        <span
+          className="badge-dark"
+          style={{
+            fontSize: '0.72rem',
+            padding: '0.25rem 0.6rem',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.15)',
+          }}
+        >
+          <Sparkles size={11} style={{ color: 'var(--gold-400)', marginRight: '0.3rem' }} />
+          {reel.tag}
+        </span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {/* Mute / Unmute Button */}
+          <button
+            onClick={toggleMute}
+            aria-label={isMuted ? 'Unmute video sound' : 'Mute video sound'}
+            title={isMuted ? 'Click to Unmute' : 'Click to Mute'}
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              backgroundColor: isMuted ? 'rgba(0, 0, 0, 0.65)' : 'var(--gold-400)',
+              color: isMuted ? '#ffffff' : '#07070a',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              backdropFilter: 'blur(8px)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+
+          {/* Instagram Link Icon */}
+          <a
+            href={CONTACT_CONFIG.instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(0, 0, 0, 0.65)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              textDecoration: 'none',
+            }}
+            title="View on Instagram"
+          >
+            <InstagramIcon size={16} color="var(--gold-400)" />
+          </a>
+        </div>
+      </div>
+
+      {/* Center Play Indicator (when paused) */}
+      {!isPlaying && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 4,
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(212, 175, 55, 0.9)',
+              color: '#07070a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 0 25px rgba(212, 175, 55, 0.6)',
+            }}
+          >
+            <Play size={24} fill="#07070a" style={{ marginLeft: '3px' }} />
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Customized Player Controls & Caption */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: '1.25rem 1rem 1rem',
+          zIndex: 5,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.65rem',
+        }}
+      >
+        {/* Caption */}
+        <div>
+          <h3
+            style={{
+              fontSize: '1rem',
+              color: '#ffffff',
+              fontWeight: 700,
+              lineHeight: 1.3,
+              marginBottom: '0.2rem',
+              textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+            }}
+          >
+            {reel.title}
+          </h3>
+          <p style={{ fontSize: '0.75rem', color: 'var(--gold-300)' }}>
+            @raman_kandhan • RYNX Digital Media
+          </p>
+        </div>
+
+        {/* Customized Timeline Scrubber */}
+        <div style={{ position: 'relative', width: '100%' }} onClick={(e) => e.stopPropagation()}>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="0.1"
+            value={progress}
+            onChange={handleSeek}
+            aria-label="Seek video position"
+            style={{
+              width: '100%',
+              accentColor: 'var(--gold-400)',
+              cursor: 'pointer',
+              height: '4px',
+              display: 'block',
+            }}
+          />
+        </div>
+
+        {/* Control Action Buttons */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.75rem',
+            color: '#d0d0db',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <button
+              onClick={togglePlay}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#ffffff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                padding: 0,
+              }}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            </button>
+
+            <span style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: 'var(--gold-300)' }}>
+              {currentTimeStr} / {durationStr}
+            </span>
+          </div>
+
+          <button
+            onClick={handleFullscreen}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ffffff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              padding: 0,
+            }}
+            aria-label="Fullscreen"
+            title="Fullscreen"
+          >
+            <Maximize size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const InstagramShowcase: React.FC = () => {
   return (
     <section
       id="instagram"
@@ -59,125 +428,23 @@ export const InstagramShowcase: React.FC = () => {
           <h2 className="editorial-title">Follow Our Creative Journey</h2>
 
           <p>
-            Catch daily behind-the-scenes editing breakdowns, sound design experiments, and short-form cuts on our official Instagram.
+            Watch real cinematic editing cutdowns, sound design sequences, and short-form video reels produced by RYNX Digital Media.
           </p>
         </div>
 
-        {/* Selected Reel Showcase Grid */}
+        {/* Uploaded Video Reels Grid */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '1.5rem',
-            marginBottom: '3rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '1.75rem',
+            maxWidth: '1100px',
+            margin: '0 auto 3rem',
           }}
           className="ig-grid"
         >
-          {instagramReels.map((reel) => (
-            <a
-              key={reel.id}
-              href={CONTACT_CONFIG.instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="card-glass"
-              style={{
-                borderRadius: '1.25rem',
-                overflow: 'hidden',
-                position: 'relative',
-                aspectRatio: '9/16',
-                display: 'block',
-                textDecoration: 'none',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-              }}
-            >
-              <img
-                src={reel.thumbnail}
-                alt={reel.title}
-                loading="lazy"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                  transition: 'transform 0.4s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-              />
-
-              {/* Gradient Overlay */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.75) 100%)',
-                }}
-              />
-
-              {/* Top Instagram Badge */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '0.85rem',
-                  right: '0.85rem',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(0,0,0,0.65)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backdropFilter: 'blur(6px)',
-                }}
-              >
-                <InstagramIcon size={16} color="var(--gold-400)" />
-              </div>
-
-              {/* Play Icon */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  pointerEvents: 'none',
-                }}
-              >
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(12, 12, 18, 0.75)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(6px)',
-                  }}
-                >
-                  <Play size={18} fill="#ffffff" color="#ffffff" style={{ marginLeft: '2px' }} />
-                </div>
-              </div>
-
-              {/* Bottom Reel Caption */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '1rem',
-                  left: '1rem',
-                  right: '1rem',
-                }}
-              >
-                <span className="badge-dark" style={{ fontSize: '0.68rem', marginBottom: '0.4rem' }}>
-                  {reel.views}
-                </span>
-                <p style={{ fontSize: '0.86rem', color: '#ffffff', fontWeight: 600, lineHeight: 1.3 }}>
-                  {reel.title}
-                </p>
-              </div>
-            </a>
+          {UPLOADED_REELS.map((reel) => (
+            <ReelCard key={reel.id} reel={reel} />
           ))}
         </div>
 
@@ -198,9 +465,10 @@ export const InstagramShowcase: React.FC = () => {
       </div>
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
           .ig-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
+            grid-template-columns: 1fr !important;
+            max-width: 360px !important;
           }
         }
       `}</style>

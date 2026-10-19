@@ -1,5 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Play, Pause, Volume2, VolumeX, Maximize, MessageCircle, Sparkles, Check } from 'lucide-react';
+import {
+  X,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  MessageCircle,
+  Sparkles,
+  Check,
+  AlertCircle,
+  RefreshCw,
+} from 'lucide-react';
 import type { DbPortfolioProject } from '../types/database';
 import { getProjectEnquiryUrl } from '../config/contactConfig';
 
@@ -12,9 +24,12 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState('00:00');
   const [durationTime, setDurationTime] = useState('00:00');
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackError, setPlaybackError] = useState(false);
 
   useEffect(() => {
     if (!project) return;
@@ -23,10 +38,26 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    // Keyboard listener for Escape key
+    // Keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if typing in an input
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
       if (e.key === 'Escape') {
         onClose();
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'm' || e.key === 'M') {
+        toggleMute();
+      } else if (e.key === 'f' || e.key === 'F') {
+        handleFullscreen();
+      } else if (e.key === 'ArrowLeft' && videoRef.current) {
+        e.preventDefault();
+        videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
+      } else if (e.key === 'ArrowRight' && videoRef.current) {
+        e.preventDefault();
+        videoRef.current.currentTime = Math.min(videoRef.current.duration || 100, videoRef.current.currentTime + 5);
       }
     };
 
@@ -36,7 +67,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [project, onClose]);
+  }, [project, onClose, isPlaying, isMuted]);
 
   if (!project) return null;
 
@@ -55,6 +86,21 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setVolume(val);
+    if (videoRef.current) {
+      videoRef.current.volume = val;
+      if (val === 0) {
+        videoRef.current.muted = true;
+        setIsMuted(true);
+      } else {
+        videoRef.current.muted = false;
+        setIsMuted(false);
+      }
     }
   };
 
@@ -89,6 +135,14 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
       if (videoRef.current.requestFullscreen) {
         videoRef.current.requestFullscreen();
       }
+    }
+  };
+
+  const handleRetryPlayback = () => {
+    setPlaybackError(false);
+    if (videoRef.current) {
+      videoRef.current.load();
+      videoRef.current.play().catch(() => setPlaybackError(true));
     }
   };
 
@@ -164,7 +218,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
               margin: '0 auto',
             }}
           >
-            {videoSource ? (
+            {videoSource && !playbackError ? (
               <video
                 ref={videoRef}
                 src={videoSource}
@@ -174,6 +228,12 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
                 loop
                 muted={isMuted}
                 onTimeUpdate={handleTimeUpdate}
+                onWaiting={() => setIsBuffering(true)}
+                onPlaying={() => {
+                  setIsBuffering(false);
+                  setIsPlaying(true);
+                }}
+                onError={() => setPlaybackError(true)}
                 onClick={togglePlay}
                 style={{
                   width: '100%',
@@ -183,6 +243,34 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
                   display: 'block',
                 }}
               />
+            ) : playbackError ? (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '2rem',
+                  backgroundColor: '#0a0a10',
+                  color: '#ffffff',
+                  textAlign: 'center',
+                }}
+              >
+                <AlertCircle size={36} style={{ color: '#f87171', marginBottom: '0.75rem' }} />
+                <h4 style={{ fontSize: '1.05rem', marginBottom: '0.35rem' }}>Video Playback Notice</h4>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', maxWidth: '340px', marginBottom: '1.25rem' }}>
+                  Unable to load media directly. Please verify file encoding or storage network connection.
+                </p>
+                <button
+                  onClick={handleRetryPlayback}
+                  className="btn btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.82rem' }}
+                >
+                  <RefreshCw size={14} /> Retry Playback
+                </button>
+              </div>
             ) : (
               <img
                 src={project.thumbnail_url}
@@ -196,8 +284,35 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
               />
             )}
 
-            {/* Custom Floating Controls */}
-            {videoSource && (
+            {/* Buffering Indicator */}
+            {isBuffering && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  pointerEvents: 'none',
+                  zIndex: 4,
+                }}
+              >
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    border: '3px solid rgba(212,175,55,0.25)',
+                    borderTopColor: 'var(--gold-400)',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite',
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Custom Black-and-Gold Floating Controls */}
+            {videoSource && !playbackError && (
               <div
                 style={{
                   position: 'absolute',
@@ -205,13 +320,14 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
                   left: 0,
                   right: 0,
                   padding: '1rem',
-                  background: 'linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
+                  background: 'linear-gradient(0deg, rgba(5,5,8,0.92) 0%, rgba(5,5,8,0.4) 65%, rgba(0,0,0,0) 100%)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.5rem',
+                  zIndex: 5,
                 }}
               >
-                {/* Progress Slider */}
+                {/* Progress Scrubber */}
                 <input
                   type="range"
                   min="0"
@@ -229,7 +345,8 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
                 />
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    {/* Play/Pause */}
                     <button
                       onClick={togglePlay}
                       style={{
@@ -239,32 +356,57 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
+                        padding: 0,
                       }}
-                      aria-label={isPlaying ? 'Pause' : 'Play'}
+                      aria-label={isPlaying ? 'Pause video (Space)' : 'Play video (Space)'}
+                      title="Space to toggle play/pause"
                     >
                       {isPlaying ? <Pause size={18} /> : <Play size={18} />}
                     </button>
 
-                    <button
-                      onClick={toggleMute}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#ffffff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                      aria-label={isMuted ? 'Unmute' : 'Mute'}
-                    >
-                      {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                    </button>
+                    {/* Mute & Volume */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <button
+                        onClick={toggleMute}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: 0,
+                        }}
+                        aria-label={isMuted ? 'Unmute (M)' : 'Mute (M)'}
+                        title="M to toggle mute"
+                      >
+                        {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                      </button>
 
-                    <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#a0a0ab' }}>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={isMuted ? 0 : volume}
+                        onChange={handleVolumeChange}
+                        aria-label="Volume slider"
+                        style={{
+                          width: '55px',
+                          accentColor: 'var(--gold-400)',
+                          cursor: 'pointer',
+                          height: '3px',
+                        }}
+                      />
+                    </div>
+
+                    {/* Time Counter */}
+                    <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#c0c0cb' }}>
                       {currentTime} / {durationTime || project.duration || '00:30'}
                     </span>
                   </div>
 
+                  {/* Fullscreen */}
                   <button
                     onClick={handleFullscreen}
                     style={{
@@ -274,8 +416,10 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
+                      padding: 0,
                     }}
-                    aria-label="Fullscreen"
+                    aria-label="Fullscreen (F)"
+                    title="Fullscreen"
                   >
                     <Maximize size={18} />
                   </button>
@@ -310,35 +454,16 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
             {project.description}
           </p>
 
-          {project.case_study && (
-            <div
-              style={{
-                backgroundColor: 'rgba(20, 20, 30, 0.5)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: '0.85rem',
-                padding: '1.15rem',
-                marginBottom: '1.5rem',
-              }}
-            >
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--gold-300)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Sparkles size={14} /> Creative Direction & Editing Breakdown
-              </h4>
-              <p style={{ fontSize: '0.9rem', color: '#c4c4cf', lineHeight: 1.55 }}>
-                {project.case_study}
-              </p>
-            </div>
-          )}
-
-          {/* Tools & Deliverables Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+          {/* Tools & Deliverables */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
             {project.tools_used && project.tools_used.length > 0 && (
               <div>
-                <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
-                  Tools Utilized
-                </span>
+                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--gold-400)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  Post-Production Suite
+                </h4>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  {project.tools_used.map((tool) => (
-                    <span key={tool} className="badge-dark" style={{ fontSize: '0.75rem' }}>
+                  {project.tools_used.map((tool, idx) => (
+                    <span key={idx} className="badge-dark" style={{ fontSize: '0.78rem' }}>
                       {tool}
                     </span>
                   ))}
@@ -348,45 +473,38 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
 
             {project.deliverables && project.deliverables.length > 0 && (
               <div>
-                <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', display: 'block', marginBottom: '0.4rem' }}>
-                  Deliverables
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  {project.deliverables.map((item) => (
-                    <span key={item} style={{ fontSize: '0.82rem', color: '#d0d0db', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <Check size={12} color="var(--gold-400)" />
-                      {item}
-                    </span>
+                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--gold-400)', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  Delivered Assets
+                </h4>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {project.deliverables.map((item, idx) => (
+                    <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#c0c0d0', fontSize: '0.85rem' }}>
+                      <Check size={14} style={{ color: 'var(--gold-400)' }} /> {item}
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
           </div>
 
-          {/* Action CTAs */}
+          {/* CTA */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <a
               href={getProjectEnquiryUrl(project.title)}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-whatsapp"
-              style={{ flex: 1, minWidth: '220px', padding: '0.85rem 1.5rem', fontSize: '0.92rem' }}
+              className="btn btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}
             >
-              <MessageCircle size={18} />
-              Get Similar Editing
+              <MessageCircle size={18} /> Enquire About This Style
             </a>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              <Sparkles size={12} style={{ display: 'inline', marginRight: '0.25rem', color: 'var(--gold-400)' }} />
+              Direct WhatsApp Discussion
+            </span>
           </div>
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 840px) {
-          #modal-grid {
-            grid-template-columns: 1fr !important;
-            padding: 1.25rem !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };

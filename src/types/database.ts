@@ -18,6 +18,8 @@ export interface DbPortfolioProject {
   thumbnail_url: string;
   preview_video_url?: string | null;
   full_video_url?: string | null;
+  video_storage_path?: string | null;
+  thumbnail_storage_path?: string | null;
   aspect_ratio: '16:9' | '9:16' | '2.39:1';
   duration?: string | null;
   client_industry?: string | null;
@@ -49,9 +51,13 @@ export interface DbTestimonial {
 export interface DbBeforeAfterProject {
   id: string;
   project_name: string;
+  description?: string | null;
   raw_footage_url: string;
   final_video_url: string;
   thumbnail_url?: string | null;
+  before_image_path?: string | null;
+  after_image_path?: string | null;
+  is_featured: boolean;
   is_published: boolean;
   display_order: number;
   created_at: string;
