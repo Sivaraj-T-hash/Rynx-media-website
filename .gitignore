@@ -25,6 +25,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-# Local video files - upload these to Supabase Storage
-/public/videos/
+
+# Ignore duplicate local working directory videos
 /videos/
