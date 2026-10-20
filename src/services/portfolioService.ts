@@ -8,14 +8,21 @@ export const portfolioService = {
       .select('*, category:categories(*)')
       .eq('is_published', true)
       .order('display_order', { ascending: true })
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true });
 
     if (error) {
       console.warn('Error fetching published projects:', error.message);
       return [];
     }
 
-    return data || [];
+    const items = (data || []) as DbPortfolioProject[];
+    return items.sort(
+      (a, b) =>
+        (a.display_order ?? 0) - (b.display_order ?? 0) ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() ||
+        a.id.localeCompare(b.id)
+    );
   },
 
   async getAllProjectsAdmin(): Promise<DbPortfolioProject[]> {
@@ -23,14 +30,92 @@ export const portfolioService = {
       .from('portfolio_projects')
       .select('*, category:categories(*)')
       .order('display_order', { ascending: true })
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true });
 
     if (error) {
       console.warn('Error fetching admin projects:', error.message);
       return [];
     }
 
-    return data || [];
+    const items = (data || []) as DbPortfolioProject[];
+    return items.sort(
+      (a, b) =>
+        (a.display_order ?? 0) - (b.display_order ?? 0) ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() ||
+        a.id.localeCompare(b.id)
+    );
+  },
+
+  /**
+   * Updates multiple portfolio video display orders atomically and safely.
+   * Handles duplicate-position prevention via two-phase updates and RPC.
+   */
+  async updateProjectOrders(
+    projectOrders: { id: string; display_order: number }[]
+  ): Promise<void> {
+    if (!projectOrders || projectOrders.length === 0) return;
+
+    // Validate that all positions are positive integers
+    for (const item of projectOrders) {
+      if (!item.id) {
+        throw new Error('Project ID is required for ordering update.');
+      }
+      if (!Number.isInteger(item.display_order) || item.display_order < 1) {
+        throw new Error(`Invalid position "${item.display_order}". Position must be a positive integer (1, 2, 3...).`);
+      }
+    }
+
+    // Check for duplicate positions
+    const positions = projectOrders.map((p) => p.display_order);
+    const uniquePositions = new Set(positions);
+    if (uniquePositions.size !== positions.length) {
+      throw new Error('Duplicate positions detected. Every portfolio video must have a unique position number.');
+    }
+
+    // 1. Attempt atomic RPC call first
+    try {
+      const { error: rpcError } = await supabase.rpc('update_portfolio_project_orders', {
+        project_orders: projectOrders,
+      });
+
+      if (!rpcError) {
+        return;
+      }
+
+      // If function doesn't exist, log notice and use safe two-phase client update
+      console.warn('RPC update_portfolio_project_orders notice:', rpcError.message);
+    } catch (rpcErr) {
+      console.warn('RPC call exception, using client fallback:', rpcErr);
+    }
+
+    // 2. Safe Fallback: Two-phase update to prevent any temporary collision issues
+    // Phase 1: Set temporary negative positions
+    for (const item of projectOrders) {
+      const { error: tempErr } = await supabase
+        .from('portfolio_projects')
+        .update({ display_order: -(item.display_order + 1000000) })
+        .eq('id', item.id);
+
+      if (tempErr) {
+        throw new Error(`Failed to assign temporary order: ${tempErr.message}`);
+      }
+    }
+
+    // Phase 2: Set final positive positions
+    for (const item of projectOrders) {
+      const { error: finalErr } = await supabase
+        .from('portfolio_projects')
+        .update({
+          display_order: item.display_order,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', item.id);
+
+      if (finalErr) {
+        throw new Error(`Failed to save final order position: ${finalErr.message}`);
+      }
+    }
   },
 
   async createProject(

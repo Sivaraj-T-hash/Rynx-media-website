@@ -39,8 +39,8 @@ export const AdminAnalytics: React.FC = () => {
       </div>
 
       {/* Primary KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-        <div className="card-glass" style={{ padding: '1.75rem', backgroundColor: 'rgba(15, 15, 22, 0.75)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1.25rem' }}>
+        <div className="card-glass" style={{ padding: 'clamp(1.2rem, 3vw, 1.75rem)', backgroundColor: 'rgba(15, 15, 22, 0.75)' }}>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Lead-to-Project Conversion
           </span>
@@ -52,7 +52,7 @@ export const AdminAnalytics: React.FC = () => {
           </span>
         </div>
 
-        <div className="card-glass" style={{ padding: '1.75rem', backgroundColor: 'rgba(15, 15, 22, 0.75)' }}>
+        <div className="card-glass" style={{ padding: 'clamp(1.2rem, 3vw, 1.75rem)', backgroundColor: 'rgba(15, 15, 22, 0.75)' }}>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Active Lead Pipeline
           </span>
@@ -64,7 +64,7 @@ export const AdminAnalytics: React.FC = () => {
           </span>
         </div>
 
-        <div className="card-glass" style={{ padding: '1.75rem', backgroundColor: 'rgba(15, 15, 22, 0.75)' }}>
+        <div className="card-glass" style={{ padding: 'clamp(1.2rem, 3vw, 1.75rem)', backgroundColor: 'rgba(15, 15, 22, 0.75)' }}>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Portfolio Publishing Ratio
           </span>
@@ -82,7 +82,7 @@ export const AdminAnalytics: React.FC = () => {
       </div>
 
       {/* Enquiry Funnel Visualization */}
-      <div className="card-glass" style={{ padding: '2rem', backgroundColor: 'rgba(15, 15, 22, 0.8)' }}>
+      <div className="card-glass" style={{ padding: 'clamp(1.2rem, 3vw, 2rem)', backgroundColor: 'rgba(15, 15, 22, 0.8)' }}>
         <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <TrendingUp size={18} color="var(--gold-400)" />
           <span>Real Enquiry Funnel Breakdown</span>

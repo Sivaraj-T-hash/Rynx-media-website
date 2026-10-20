@@ -109,13 +109,13 @@ export const AdminSettings: React.FC = () => {
 
       <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
         {/* Contact Information Card */}
-        <div className="card-glass" style={{ padding: '2rem', backgroundColor: 'rgba(15, 15, 22, 0.8)' }}>
+        <div className="card-glass" style={{ padding: 'clamp(1.2rem, 3vw, 2rem)', backgroundColor: 'rgba(15, 15, 22, 0.8)' }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Settings size={18} color="var(--gold-400)" />
             <span>Studio Identity & Direct Channels</span>
           </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+          <div className="admin-form-grid-2" style={{ marginBottom: '1.25rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#d0d0db', marginBottom: '0.4rem' }}>
                 Business Name
@@ -159,7 +159,7 @@ export const AdminSettings: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+          <div className="admin-form-grid-2">
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#d0d0db', marginBottom: '0.4rem' }}>
                 WhatsApp Number (International format e.g. 916382605739)
@@ -205,7 +205,7 @@ export const AdminSettings: React.FC = () => {
         </div>
 
         {/* Hero & Editorial Copy Card */}
-        <div className="card-glass" style={{ padding: '2rem', backgroundColor: 'rgba(15, 15, 22, 0.8)' }}>
+        <div className="card-glass" style={{ padding: 'clamp(1.2rem, 3vw, 2rem)', backgroundColor: 'rgba(15, 15, 22, 0.8)' }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', marginBottom: '1.5rem' }}>
             Hero & Public Website Copy
           </h2>
@@ -298,7 +298,7 @@ export const AdminSettings: React.FC = () => {
         </div>
 
         {/* SEO Metadata Card */}
-        <div className="card-glass" style={{ padding: '2rem', backgroundColor: 'rgba(15, 15, 22, 0.8)' }}>
+        <div className="card-glass" style={{ padding: 'clamp(1.2rem, 3vw, 2rem)', backgroundColor: 'rgba(15, 15, 22, 0.8)' }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', marginBottom: '1.5rem' }}>
             SEO & Social Meta Tags
           </h2>
@@ -352,7 +352,7 @@ export const AdminSettings: React.FC = () => {
             type="submit"
             disabled={saving}
             className="btn btn-primary"
-            style={{ padding: '0.85rem 2rem', fontSize: '0.95rem' }}
+            style={{ padding: '0.85rem 2rem', fontSize: '0.95rem', width: '100%', maxWidth: '300px', justifyContent: 'center' }}
           >
             <Save size={18} />
             <span>{saving ? 'Saving...' : 'Save Settings to Supabase'}</span>

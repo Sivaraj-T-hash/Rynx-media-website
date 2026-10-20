@@ -58,13 +58,20 @@ const ReelCard: React.FC<ReelCardProps> = ({ reel }) => {
     const el = containerRef.current;
     const video = videoRef.current;
     if (!el || !video) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            video.play().catch(() => {});
-            setIsPlaying(true);
+            video.muted = isMuted;
+            video
+              .play()
+              .then(() => setIsPlaying(true))
+              .catch(() => {
+                setIsPlaying(false);
+              });
           } else {
             video.pause();
             setIsPlaying(false);
@@ -76,7 +83,7 @@ const ReelCard: React.FC<ReelCardProps> = ({ reel }) => {
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [isMuted]);
 
   const togglePlay = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();

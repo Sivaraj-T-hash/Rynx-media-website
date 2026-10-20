@@ -152,8 +152,8 @@ export const AdminEnquiries: React.FC = () => {
         </div>
 
         {/* Search Input */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '0.5rem' }}>
-          <div style={{ position: 'relative' }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '0.5rem', flex: '1 1 240px', maxWidth: '100%' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
             <Search
               size={16}
               color="var(--text-muted)"
@@ -163,7 +163,7 @@ export const AdminEnquiries: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by client, brand, email..."
+              placeholder="Search client, brand, email..."
               style={{
                 padding: '0.5rem 1rem 0.5rem 2.4rem',
                 borderRadius: '999px',
@@ -172,11 +172,11 @@ export const AdminEnquiries: React.FC = () => {
                 color: '#ffffff',
                 fontSize: '0.84rem',
                 outline: 'none',
-                width: '260px',
+                width: '100%',
               }}
             />
           </div>
-          <button type="submit" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>
+          <button type="submit" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
             Search
           </button>
         </form>
@@ -197,107 +197,206 @@ export const AdminEnquiries: React.FC = () => {
             <p style={{ fontSize: '1rem', color: '#ffffff', fontWeight: 600 }}>No enquiries matching this criteria.</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.75rem 1rem' }}>Date</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Client & Brand</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Service Required</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Volume & Deadline</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Status</th>
-                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enquiries.map((enq) => {
-                  const badge = getStatusBadge(enq.status);
-                  const dateStr = new Date(enq.created_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  });
+          <>
+            {/* Desktop Table View */}
+            <div className="admin-desktop-table" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '0.75rem 1rem' }}>Date</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Client & Brand</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Service Required</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Volume & Deadline</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Status</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {enquiries.map((enq) => {
+                    const badge = getStatusBadge(enq.status);
+                    const dateStr = new Date(enq.created_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
 
-                  return (
-                    <tr
-                      key={enq.id}
-                      style={{
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => openDetails(enq)}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                        {dateStr}
-                      </td>
+                    return (
+                      <tr
+                        key={enq.id}
+                        style={{
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => openDetails(enq)}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                          {dateStr}
+                        </td>
 
-                      <td style={{ padding: '1rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 700, color: '#ffffff' }}>{enq.full_name}</span>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--gold-400)' }}>
-                            {enq.brand_name || enq.email}
-                          </span>
-                        </div>
-                      </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 700, color: '#ffffff' }}>{enq.full_name}</span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--gold-400)' }}>
+                              {enq.brand_name || enq.email}
+                            </span>
+                          </div>
+                        </td>
 
-                      <td style={{ padding: '1rem', color: '#e0e0e8' }}>
-                        {enq.editing_type}
-                      </td>
+                        <td style={{ padding: '1rem', color: '#e0e0e8' }}>
+                          {enq.editing_type}
+                        </td>
 
-                      <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                        {enq.video_count || '1 video'} {enq.deadline ? `• ${enq.deadline}` : ''}
-                      </td>
+                        <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                          {enq.video_count || '1 video'} {enq.deadline ? `• ${enq.deadline}` : ''}
+                        </td>
 
-                      <td style={{ padding: '1rem' }}>
-                        <span
-                          style={{
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            padding: '0.2rem 0.65rem',
-                            borderRadius: '999px',
-                            backgroundColor: badge.bg,
-                            color: badge.text,
-                            border: `1px solid ${badge.border}`,
-                          }}
-                        >
-                          {enq.status}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: '1rem', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
-                        <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                          <button
-                            onClick={() => openDetails(enq)}
-                            className="btn btn-secondary"
-                            style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}
-                          >
-                            Details
-                          </button>
-
-                          <button
-                            onClick={() => handleDelete(enq)}
+                        <td style={{ padding: '1rem' }}>
+                          <span
                             style={{
-                              background: 'rgba(239, 68, 68, 0.1)',
-                              border: '1px solid rgba(239, 68, 68, 0.25)',
-                              color: '#fca5a5',
-                              padding: '0.45rem',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              padding: '0.2rem 0.65rem',
+                              borderRadius: '999px',
+                              backgroundColor: badge.bg,
+                              color: badge.text,
+                              border: `1px solid ${badge.border}`,
                             }}
-                            title="Delete enquiry"
                           >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            {enq.status}
+                          </span>
+                        </td>
+
+                        <td style={{ padding: '1rem', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                            <button
+                              onClick={() => openDetails(enq)}
+                              className="btn btn-secondary"
+                              style={{ padding: '0.4rem 0.85rem', fontSize: '0.78rem' }}
+                            >
+                              Details
+                            </button>
+
+                            <button
+                              onClick={() => handleDelete(enq)}
+                              style={{
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                color: '#fca5a5',
+                                padding: '0.45rem',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                              }}
+                              title="Delete enquiry"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="admin-mobile-cards" style={{ display: 'none', flexDirection: 'column', gap: '0.85rem' }}>
+              {enquiries.map((enq) => {
+                const badge = getStatusBadge(enq.status);
+                const dateStr = new Date(enq.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                });
+
+                return (
+                  <div
+                    key={enq.id}
+                    onClick={() => openDetails(enq)}
+                    style={{
+                      padding: '1rem',
+                      borderRadius: '0.85rem',
+                      backgroundColor: 'rgba(22, 22, 32, 0.65)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.65rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{dateStr}</span>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '0.15rem 0.55rem',
+                          borderRadius: '999px',
+                          backgroundColor: badge.bg,
+                          color: badge.text,
+                          border: `1px solid ${badge.border}`,
+                        }}
+                      >
+                        {enq.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>{enq.full_name}</div>
+                      {(enq.brand_name || enq.email) && (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--gold-400)' }}>{enq.brand_name || enq.email}</div>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '0.82rem', color: '#d0d0db' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Service: </span>
+                      {enq.editing_type}
+                    </div>
+
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                      {enq.video_count || '1 video'} {enq.deadline ? `• Deadline: ${enq.deadline}` : ''}
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingTop: '0.6rem',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => openDetails(enq)}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.35rem 0.85rem', fontSize: '0.78rem' }}
+                      >
+                        View Details
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(enq)}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          color: '#fca5a5',
+                          padding: '0.35rem 0.6rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                        }}
+                        title="Delete enquiry"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
@@ -307,7 +406,7 @@ export const AdminEnquiries: React.FC = () => {
           <div
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '680px', padding: '2.5rem' }}
+            style={{ maxWidth: '680px', width: '100%', padding: 'clamp(1.2rem, 3vw, 2.5rem)' }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
               <div>
@@ -351,7 +450,7 @@ export const AdminEnquiries: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-whatsapp"
-                style={{ padding: '0.55rem 1.15rem', fontSize: '0.84rem' }}
+                style={{ padding: '0.55rem 1.15rem', fontSize: '0.84rem', wordBreak: 'break-word', maxWidth: '100%' }}
               >
                 <MessageCircle size={16} />
                 <span>Chat on WhatsApp ({activeEnquiry.whatsapp_number})</span>
@@ -368,7 +467,7 @@ export const AdminEnquiries: React.FC = () => {
             </div>
 
             {/* Project Details Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="admin-form-grid-2" style={{ marginBottom: '1.5rem' }}>
               <div style={{ padding: '0.85rem 1rem', borderRadius: '0.75rem', backgroundColor: 'rgba(20, 20, 30, 0.6)' }}>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Editing Service</span>
                 <p style={{ fontWeight: 600, color: '#ffffff', marginTop: '0.2rem' }}>{activeEnquiry.editing_type}</p>

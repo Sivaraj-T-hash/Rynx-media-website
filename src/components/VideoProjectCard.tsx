@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Play, Sparkles, MessageCircle, ArrowUpRight } from 'lucide-react';
+import { Play, Pause, Sparkles, MessageCircle, ArrowUpRight } from 'lucide-react';
 import type { DbPortfolioProject } from '../types/database';
 import { getProjectEnquiryUrl } from '../config/contactConfig';
 
@@ -23,9 +23,26 @@ export const VideoProjectCard: React.FC<VideoProjectCardProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [isInViewport, setIsInViewport] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    return typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
+  });
 
   const isVertical = project.aspect_ratio === '9:16';
-  const shouldPlay = !isModalOpen && (isHovered || (isInViewport && activePlayingId === project.id));
+  const videoSource = project.preview_video_url || project.full_video_url;
+
+  // Check reduced motion preference changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const listener = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    }
+  }, []);
 
   // IntersectionObserver for viewport tracking
   useEffect(() => {
@@ -35,44 +52,69 @@ export const VideoProjectCard: React.FC<VideoProjectCardProps> = ({
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+          // Responsive threshold: 35% on narrow viewports for tall cards, 50% on desktop
+          const threshold = typeof window !== 'undefined' && window.innerWidth <= 768 ? 0.35 : 0.5;
+          if (entry.isIntersecting && entry.intersectionRatio >= threshold) {
             setIsInViewport(true);
           } else {
             setIsInViewport(false);
           }
         });
       },
-      { threshold: 0.5 }
+      { threshold: [0, 0.35, 0.5, 0.8] }
     );
 
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
-  // Handle play / pause logic safely
+  // Determine if this preview card should play:
+  // When modal is open -> pause.
+  // When hovered -> plays immediately and overrides others.
+  // When in viewport, without reduced motion -> autoplays muted unless another specific card is hovered.
+  const shouldPlay =
+    !isModalOpen &&
+    (isHovered ||
+      (isInViewport &&
+        !prefersReducedMotion &&
+        (activePlayingId === null || activePlayingId === project.id)));
+
+  // Handle play / pause logic safely and robustly
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !videoSource) return;
 
-    if (isModalOpen) {
+    if (isModalOpen || !shouldPlay) {
       video.pause();
+      setIsPlaying(false);
+      if (!isHovered && !isInViewport) {
+        try {
+          video.currentTime = 0;
+        } catch {
+          // Ignore
+        }
+      }
       return;
     }
 
-    if (shouldPlay && (project.preview_video_url || project.full_video_url)) {
+    if (shouldPlay) {
+      // Ensure muted DOM property is explicitly true for iOS WebKit inline autoplay compliance
+      video.muted = true;
       const playPromise = video.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Autoplay policy prevented playback, fallback quietly
-        });
-      }
-    } else {
-      video.pause();
-      if (!isHovered) {
-        video.currentTime = 0;
+        playPromise
+          .then(() => {
+            setAutoplayBlocked(false);
+            setIsPlaying(true);
+          })
+          .catch(() => {
+            // Autoplay policy prevented playback (e.g. mobile battery saving or strict policy)
+            setAutoplayBlocked(true);
+            setIsPlaying(false);
+          });
       }
     }
-  }, [shouldPlay, isModalOpen, isHovered, project.preview_video_url, project.full_video_url]);
+  }, [shouldPlay, isModalOpen, isHovered, isInViewport, videoSource]);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -81,9 +123,34 @@ export const VideoProjectCard: React.FC<VideoProjectCardProps> = ({
 
   const handleMouseLeave = () => {
     setIsHovered(false);
+    if (activePlayingId === project.id) {
+      setActivePlayingId(null);
+    }
   };
 
-  const videoSource = project.preview_video_url || project.full_video_url;
+  const handleTapToPlay = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      video.muted = true;
+      video
+        .play()
+        .then(() => {
+          setAutoplayBlocked(false);
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          // If browser strictly forbids inline play, open the video modal
+          onOpenModal(project);
+        });
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+
   const categoryName = project.category?.name || 'Featured Edit';
 
   return (
@@ -126,9 +193,9 @@ export const VideoProjectCard: React.FC<VideoProjectCardProps> = ({
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease',
+            transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease',
             transform: isHovered ? 'scale(1.04)' : 'scale(1)',
-            opacity: isHovered && videoLoaded && videoSource ? 0 : 1,
+            opacity: isPlaying && videoLoaded && videoSource ? 0 : 1,
             zIndex: 1,
           }}
         />
@@ -141,8 +208,10 @@ export const VideoProjectCard: React.FC<VideoProjectCardProps> = ({
             muted
             loop
             playsInline
-            preload="none"
+            preload={isInViewport || isHovered ? 'metadata' : 'none'}
             onLoadedData={() => setVideoLoaded(true)}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
             style={{
               position: 'absolute',
               inset: 0,
@@ -150,7 +219,7 @@ export const VideoProjectCard: React.FC<VideoProjectCardProps> = ({
               height: '100%',
               objectFit: 'cover',
               zIndex: 2,
-              opacity: isHovered || (isInViewport && activePlayingId === project.id) ? 1 : 0,
+              opacity: isPlaying ? 1 : 0,
               transition: 'opacity 0.35s ease',
             }}
           />
@@ -191,7 +260,7 @@ export const VideoProjectCard: React.FC<VideoProjectCardProps> = ({
           )}
         </div>
 
-        {/* Play Icon Affordance */}
+        {/* Play Icon Affordance / Accessible Tap-to-play Control */}
         <div
           style={{
             position: 'absolute',
@@ -200,28 +269,44 @@ export const VideoProjectCard: React.FC<VideoProjectCardProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 4,
-            pointerEvents: 'none',
+            pointerEvents: autoplayBlocked || !isPlaying || isHovered ? 'auto' : 'none',
           }}
         >
-          <div
+          <button
+            type="button"
+            onClick={handleTapToPlay}
+            aria-label={
+              isPlaying
+                ? `Pause preview of ${project.title}`
+                : autoplayBlocked
+                ? `Autoplay blocked by browser. Tap to play preview of ${project.title}`
+                : `Play preview of ${project.title}`
+            }
+            title={autoplayBlocked ? 'Tap to play video preview' : undefined}
             style={{
               width: '52px',
               height: '52px',
               borderRadius: '50%',
-              backgroundColor: isHovered ? 'var(--gold-400)' : 'rgba(12, 12, 18, 0.75)',
-              color: isHovered ? '#07070a' : '#ffffff',
-              border: isHovered ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
+              backgroundColor: isHovered || autoplayBlocked ? 'var(--gold-400)' : 'rgba(12, 12, 18, 0.75)',
+              color: isHovered || autoplayBlocked ? '#07070a' : '#ffffff',
+              border: isHovered || autoplayBlocked ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-              transform: isHovered ? 'scale(1.12)' : 'scale(1)',
-              boxShadow: isHovered ? '0 0 25px rgba(212, 175, 55, 0.6)' : 'none',
+              transform: isHovered || autoplayBlocked ? 'scale(1.12)' : 'scale(1)',
+              boxShadow: isHovered || autoplayBlocked ? '0 0 25px rgba(212, 175, 55, 0.6)' : 'none',
               backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+              opacity: isPlaying && !isHovered ? 0 : 1,
             }}
           >
-            <Play size={22} style={{ marginLeft: '3px' }} fill={isHovered ? '#07070a' : 'none'} />
-          </div>
+            {isPlaying ? (
+              <Pause size={22} fill={isHovered ? '#07070a' : '#ffffff'} />
+            ) : (
+              <Play size={22} style={{ marginLeft: '3px' }} fill={isHovered || autoplayBlocked ? '#07070a' : 'none'} />
+            )}
+          </button>
         </div>
 
         {/* Bottom Format & Duration Badge */}

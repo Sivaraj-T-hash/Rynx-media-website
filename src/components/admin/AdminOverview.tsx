@@ -63,19 +63,20 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({ onNavigateTab }) =
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
+          <h1 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.85rem)', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
             Production Overview
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
             Real-time operational metrics and enquiry pipeline from Supabase.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', width: 'auto' }}>
           <button
+            type="button"
             onClick={() => onNavigateTab('portfolio')}
             className="btn btn-primary"
-            style={{ fontSize: '0.84rem', padding: '0.6rem 1.25rem' }}
+            style={{ fontSize: '0.84rem', padding: '0.65rem 1.25rem', minHeight: '44px' }}
           >
             <Film size={15} />
             <span>Add Project</span>
@@ -87,8 +88,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({ onNavigateTab }) =
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1.25rem',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+          gap: '1rem',
         }}
       >
         {/* Published Projects */}
@@ -200,7 +201,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({ onNavigateTab }) =
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 130px), 1fr))', gap: '0.75rem' }}>
           <div style={{ padding: '1rem', borderRadius: '0.75rem', backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
             <span style={{ fontSize: '0.78rem', color: '#fca5a5', textTransform: 'uppercase', fontWeight: 600 }}>New</span>
             <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#ffffff', marginTop: '0.25rem' }}>

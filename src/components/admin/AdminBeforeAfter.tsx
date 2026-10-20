@@ -355,7 +355,8 @@ export const AdminBeforeAfter: React.FC = () => {
         </div>
       ) : (
         <div className="card-glass" style={{ borderRadius: '1rem', overflow: 'hidden', border: '1px solid var(--border-gold-subtle)' }}>
-          <div style={{ overflowX: 'auto' }}>
+          {/* Desktop Table View */}
+          <div className="admin-desktop-table" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
@@ -506,37 +507,152 @@ export const AdminBeforeAfter: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards View */}
+          <div className="admin-mobile-cards" style={{ display: 'none', padding: '1rem', flexDirection: 'column', gap: '1rem' }}>
+            {items.map((it) => (
+              <div
+                key={it.id}
+                style={{
+                  padding: '1rem',
+                  borderRadius: '0.85rem',
+                  backgroundColor: 'rgba(20, 20, 30, 0.65)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>{it.project_name}</div>
+                    {it.description && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{it.description}</div>
+                    )}
+                  </div>
+                  {it.is_featured && (
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '0.25rem',
+                        backgroundColor: 'rgba(212, 175, 55, 0.15)',
+                        color: 'var(--gold-400)',
+                        border: '1px solid rgba(212, 175, 55, 0.3)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <Sparkles size={10} /> Default
+                    </span>
+                  )}
+                </div>
+
+                {/* Thumbnails row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>RAW Frame</span>
+                    <div style={{ width: '100%', height: '70px', borderRadius: '0.35rem', overflow: 'hidden', backgroundColor: '#000', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <img src={it.raw_footage_url} alt="RAW" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--gold-400)', textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>Final Grade</span>
+                    <div style={{ width: '100%', height: '70px', borderRadius: '0.35rem', overflow: 'hidden', backgroundColor: '#000', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
+                      <img src={it.final_video_url} alt="Grade" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions row */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '0.6rem',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                  }}
+                >
+                  <button
+                    onClick={() => handleTogglePublish(it)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.25rem 0.55rem',
+                      borderRadius: '1rem',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: 'none',
+                      backgroundColor: it.is_published ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: it.is_published ? '#4ade80' : '#f87171',
+                    }}
+                  >
+                    {it.is_published ? <Eye size={11} /> : <EyeOff size={11} />}
+                    {it.is_published ? 'Published' : 'Draft'}
+                  </button>
+
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    {!it.is_featured && (
+                      <button
+                        onClick={() => handleSetFeatured(it)}
+                        className="btn btn-secondary"
+                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.72rem' }}
+                      >
+                        Make Default
+                      </button>
+                    )}
+                    <button
+                      onClick={() => openEditModal(it)}
+                      style={{
+                        padding: '0.4rem',
+                        borderRadius: '0.4rem',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        color: '#ffffff',
+                        cursor: 'pointer',
+                      }}
+                      title="Edit Comparison"
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(it)}
+                      style={{
+                        padding: '0.4rem',
+                        borderRadius: '0.4rem',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        color: '#f87171',
+                        cursor: 'pointer',
+                      }}
+                      title="Delete Comparison"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Add / Edit Comparison Modal */}
       {isModalOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 1000,
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem',
-            overflowY: 'auto',
-          }}
-        >
+        <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
           <div
-            className="card-glass"
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
               maxWidth: '700px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              borderRadius: '1.25rem',
-              border: '1px solid var(--border-gold-subtle)',
-              padding: '2rem',
+              padding: 'clamp(1.2rem, 3vw, 2rem)',
               backgroundColor: '#0e0e15',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8)',
             }}
           >
             {/* Modal Header */}
@@ -602,7 +718,7 @@ export const AdminBeforeAfter: React.FC = () => {
 
             <form onSubmit={handleSubmit}>
               {/* IMAGE UPLOAD SLOTS: BEFORE & AFTER */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
+              <div className="admin-form-grid-2" style={{ marginBottom: '1.5rem' }}>
                 {/* BEFORE IMAGE */}
                 <div
                   style={{
@@ -785,7 +901,7 @@ export const AdminBeforeAfter: React.FC = () => {
               </div>
 
               {/* Display Order & Toggles */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.25rem', marginBottom: '1.75rem', alignItems: 'center' }}>
+              <div className="admin-form-grid-2" style={{ marginBottom: '1.75rem', alignItems: 'flex-start' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#d0d0db', marginBottom: '0.4rem' }}>
                     Display Order

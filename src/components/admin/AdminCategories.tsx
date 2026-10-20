@@ -174,83 +174,170 @@ export const AdminCategories: React.FC = () => {
           <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
             <Tags size={36} style={{ margin: '0 auto 0.75rem auto', opacity: 0.4 }} />
             <p style={{ fontSize: '0.95rem', marginBottom: '1rem' }}>No categories created yet.</p>
-            <button onClick={openAddModal} className="btn btn-secondary" style={{ fontSize: '0.82rem' }}>
+            <button type="button" onClick={openAddModal} className="btn btn-secondary" style={{ fontSize: '0.82rem' }}>
               Create First Category
             </button>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
-                  <th style={{ padding: '0.75rem 1rem' }}>Order</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Name</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Slug</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>Description</th>
-                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((cat) => (
-                  <tr
-                    key={cat.id}
-                    style={{
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                      transition: 'background 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  >
-                    <td style={{ padding: '1rem', color: 'var(--gold-400)', fontWeight: 700 }}>
-                      #{cat.display_order}
-                    </td>
-                    <td style={{ padding: '1rem', fontWeight: 600, color: '#ffffff' }}>
-                      {cat.name}
-                    </td>
-                    <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.82rem' }}>
-                      {cat.slug}
-                    </td>
-                    <td style={{ padding: '1rem', color: 'var(--text-muted)', maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {cat.description || '—'}
-                    </td>
-                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                        <button
-                          onClick={() => openEditModal(cat)}
-                          aria-label="Edit category"
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.06)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            color: '#ffffff',
-                            padding: '0.45rem',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-
-                        <button
-                          onClick={() => handleDelete(cat)}
-                          aria-label="Delete category"
-                          style={{
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid rgba(239, 68, 68, 0.25)',
-                            color: '#fca5a5',
-                            padding: '0.45rem',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
+          <>
+            {/* Desktop Table (>= 769px) */}
+            <div className="admin-desktop-table" style={{ overflowX: 'auto', width: '100%' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                    <th style={{ padding: '0.75rem 1rem' }}>Order</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Name</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Slug</th>
+                    <th style={{ padding: '0.75rem 1rem' }}>Description</th>
+                    <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {categories.map((cat) => (
+                    <tr
+                      key={cat.id}
+                      style={{
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <td style={{ padding: '1rem', color: 'var(--gold-400)', fontWeight: 700 }}>
+                        #{cat.display_order}
+                      </td>
+                      <td style={{ padding: '1rem', fontWeight: 600, color: '#ffffff' }}>
+                        {cat.name}
+                      </td>
+                      <td style={{ padding: '1rem', color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.82rem' }}>
+                        {cat.slug}
+                      </td>
+                      <td style={{ padding: '1rem', color: 'var(--text-muted)', maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {cat.description || '—'}
+                      </td>
+                      <td style={{ padding: '1rem', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(cat)}
+                            aria-label={`Edit category ${cat.name}`}
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.06)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              color: '#ffffff',
+                              padding: '0.45rem',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(cat)}
+                            aria-label={`Delete category ${cat.name}`}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              color: '#fca5a5',
+                              padding: '0.45rem',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Stacked Cards View (< 769px) */}
+            <div className="admin-mobile-cards">
+              {categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '0.75rem',
+                    backgroundColor: 'rgba(22, 22, 32, 0.6)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--gold-400)', backgroundColor: 'rgba(212, 175, 55, 0.1)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                        #{cat.display_order}
+                      </span>
+                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>
+                        {cat.name}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(cat)}
+                        aria-label={`Edit category ${cat.name}`}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          color: '#ffffff',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          fontSize: '0.78rem',
+                          minHeight: '36px',
+                        }}
+                      >
+                        <Edit2 size={13} /> <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(cat)}
+                        aria-label={`Delete category ${cat.name}`}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          color: '#fca5a5',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          fontSize: '0.78rem',
+                          minHeight: '36px',
+                        }}
+                      >
+                        <Trash2 size={13} /> <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+                    /{cat.slug}
+                  </span>
+
+                  {cat.description && (
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                      {cat.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -260,7 +347,7 @@ export const AdminCategories: React.FC = () => {
           <div
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '520px', padding: '2rem' }}
+            style={{ maxWidth: '520px', width: '100%', padding: 'clamp(1.2rem, 3vw, 2rem)' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
               <h3 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#ffffff' }}>

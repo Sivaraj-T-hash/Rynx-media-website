@@ -46,26 +46,36 @@ export const PortfolioSection: React.FC = () => {
     };
   }, []);
 
+  // Ensure strict ascending display_order sorting with deterministic fallbacks
+  const sortedProjects = useMemo(() => {
+    return [...projects].sort(
+      (a, b) =>
+        (a.display_order ?? 0) - (b.display_order ?? 0) ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() ||
+        a.id.localeCompare(b.id)
+    );
+  }, [projects]);
+
   // Compute project counts per category
   const projectCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: projects.length };
-    projects.forEach((p) => {
+    const counts: Record<string, number> = { all: sortedProjects.length };
+    sortedProjects.forEach((p) => {
       if (p.category_id) {
         counts[p.category_id] = (counts[p.category_id] || 0) + 1;
       }
     });
     return counts;
-  }, [projects]);
+  }, [sortedProjects]);
 
   // Filter projects based on selected virtual 'all' or category slug
   const filteredProjects = useMemo(() => {
     if (selectedCategorySlug === 'all') {
-      return projects;
+      return sortedProjects;
     }
     const matchedCategory = categories.find((c) => c.slug === selectedCategorySlug);
     if (!matchedCategory) return [];
-    return projects.filter((p) => p.category_id === matchedCategory.id);
-  }, [projects, selectedCategorySlug, categories]);
+    return sortedProjects.filter((p) => p.category_id === matchedCategory.id);
+  }, [sortedProjects, selectedCategorySlug, categories]);
 
   const displayedProjects = useMemo(() => {
     return filteredProjects.slice(0, visibleCount);

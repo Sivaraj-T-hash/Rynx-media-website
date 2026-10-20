@@ -31,61 +31,31 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
   const [isBuffering, setIsBuffering] = useState(false);
   const [playbackError, setPlaybackError] = useState(false);
 
-  useEffect(() => {
-    if (!project) return;
-
-    // Lock body scroll
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    // Keyboard shortcuts
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if typing in an input
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
-
-      if (e.key === 'Escape') {
-        onClose();
-      } else if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlay();
-      } else if (e.key === 'm' || e.key === 'M') {
-        toggleMute();
-      } else if (e.key === 'f' || e.key === 'F') {
-        handleFullscreen();
-      } else if (e.key === 'ArrowLeft' && videoRef.current) {
-        e.preventDefault();
-        videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
-      } else if (e.key === 'ArrowRight' && videoRef.current) {
-        e.preventDefault();
-        videoRef.current.currentTime = Math.min(videoRef.current.duration || 100, videoRef.current.currentTime + 5);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [project, onClose, isPlaying, isMuted]);
-
-  if (!project) return null;
-
+  // Playback control functions defined before useEffect to prevent temporal dead zone issues
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
+      if (videoRef.current.paused) {
+        videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
       } else {
-        videoRef.current.play().catch(() => {});
+        videoRef.current.pause();
+        setIsPlaying(false);
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
   const toggleMute = () => {
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      const nextMuted = !videoRef.current.muted;
+      videoRef.current.muted = nextMuted;
+      setIsMuted(nextMuted);
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (videoRef.current) {
+      if (videoRef.current.requestFullscreen) {
+        videoRef.current.requestFullscreen();
+      }
     }
   };
 
@@ -130,21 +100,91 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
     }
   };
 
-  const handleFullscreen = () => {
-    if (videoRef.current) {
-      if (videoRef.current.requestFullscreen) {
-        videoRef.current.requestFullscreen();
-      }
-    }
-  };
-
   const handleRetryPlayback = () => {
     setPlaybackError(false);
     if (videoRef.current) {
       videoRef.current.load();
-      videoRef.current.play().catch(() => setPlaybackError(true));
+      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setPlaybackError(true));
     }
   };
+
+  // Autoplay video automatically when modal opens, handle fallback to muted playback, and pause when closed
+  useEffect(() => {
+    if (!project) return;
+
+    // Reset progress and states
+    setProgress(0);
+    setPlaybackError(false);
+    setIsBuffering(false);
+
+    // Lock body scroll
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Attempt video playback immediately
+    const video = videoRef.current;
+    if (video) {
+      // Try playing
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(() => {
+            // Unmuted autoplay blocked by browser policy: retry muted
+            video.muted = true;
+            setIsMuted(true);
+            video
+              .play()
+              .then(() => setIsPlaying(true))
+              .catch(() => {
+                // If even muted autoplay is prevented, user can tap play button
+                setIsPlaying(false);
+              });
+          });
+      }
+    }
+
+    // Keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'm' || e.key === 'M') {
+        toggleMute();
+      } else if (e.key === 'f' || e.key === 'F') {
+        handleFullscreen();
+      } else if (e.key === 'ArrowLeft' && videoRef.current) {
+        e.preventDefault();
+        videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
+      } else if (e.key === 'ArrowRight' && videoRef.current) {
+        e.preventDefault();
+        videoRef.current.currentTime = Math.min(videoRef.current.duration || 100, videoRef.current.currentTime + 5);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+      // Ensure video playback is paused on close
+      if (video) {
+        try {
+          video.pause();
+        } catch {
+          // Ignore
+        }
+      }
+    };
+  }, [project, onClose]);
+
+  if (!project) return null;
 
   const isVertical = project.aspect_ratio === '9:16';
   const videoSource = project.full_video_url || project.preview_video_url;
@@ -163,7 +203,7 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
         onClick={(e) => e.stopPropagation()}
         style={{
           display: 'grid',
-          gridTemplateColumns: isVertical ? 'minmax(320px, 420px) 1fr' : '1fr',
+          gridTemplateColumns: isVertical ? 'minmax(280px, 420px) 1fr' : '1fr',
           gap: '2rem',
           padding: '2rem',
           position: 'relative',
@@ -308,6 +348,45 @@ export const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ project, onC
                     animation: 'spin 0.8s linear infinite',
                   }}
                 />
+              </div>
+            )}
+
+            {/* Center Play Button Overlay when paused */}
+            {videoSource && !playbackError && !isPlaying && (
+              <div
+                onClick={togglePlay}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  zIndex: 4,
+                  cursor: 'pointer',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={togglePlay}
+                  aria-label="Play video"
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--gold-400)',
+                    color: '#07070a',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 0 30px rgba(212, 175, 55, 0.7)',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease',
+                  }}
+                >
+                  <Play size={28} style={{ marginLeft: '4px' }} fill="#07070a" />
+                </button>
               </div>
             )}
 

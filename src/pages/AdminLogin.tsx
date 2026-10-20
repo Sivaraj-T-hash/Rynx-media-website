@@ -81,7 +81,7 @@ export const AdminLogin: React.FC = () => {
       />
 
       <div
-        className="card-glass"
+        className="card-glass admin-login-card"
         style={{
           width: '100%',
           maxWidth: '460px',
@@ -255,12 +255,21 @@ export const AdminLogin: React.FC = () => {
             type="submit"
             disabled={loading}
             className="btn btn-primary"
-            style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', cursor: loading ? 'wait' : 'pointer' }}
+            style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', cursor: loading ? 'wait' : 'pointer', minHeight: '48px' }}
           >
             {loading ? 'Authenticating...' : 'Sign In to Dashboard'}
           </button>
         </form>
       </div>
+
+      <style>{`
+        @media (max-width: 480px) {
+          .admin-login-card {
+            padding: 1.5rem 1.15rem !important;
+            border-radius: 1.25rem !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
